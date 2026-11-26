@@ -21,4 +21,6 @@ settle
 tap "Meilleur résultat"
 settle
 expect closed Rechercher
+expect visible Dune 15000
+expect visible "Autres actions" 10000
 expect noerrors

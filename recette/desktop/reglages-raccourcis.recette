@@ -1,0 +1,69 @@
+# Réglages : Raccourcis clavier, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée : « Échap quitte
+# d'abord le plein écran » et « Demander avant de quitter » activés, pas de
+# saut à 10s, « Activer la recherche » sur « / ». Le libellé de la première
+# bascule porte l’apostrophe droite, d’où la cible « Échap quitte d ».
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap Lecture
+settle
+tap "Raccourcis clavier"
+settle
+expect current "Raccourcis clavier"
+
+tap "Échap quitte d"
+settle
+expect off "Échap quitte d"
+tap "Échap quitte d"
+settle
+expect on "Échap quitte d"
+
+tap "Demander avant de quitter"
+settle
+expect off "Demander avant de quitter"
+tap "Demander avant de quitter"
+settle
+expect on "Demander avant de quitter"
+
+tap "Retour 5s"
+settle
+expect on "Retour 5s"
+expect off "Retour 10s"
+tap "Retour 10s"
+settle
+expect on "Retour 10s"
+expect off "Retour 5s"
+
+tap "Avancer 5s"
+settle
+expect on "Avancer 5s"
+expect off "Avancer 10s"
+tap "Avancer 10s"
+settle
+expect on "Avancer 10s"
+expect off "Avancer 5s"
+
+tap "Activer la recherche (/)"
+settle
+key Escape
+settle
+expect visible "Activer la recherche (/)"
+
+tap "Activer la recherche (/)"
+settle
+key k
+settle
+expect visible "Activer la recherche (K)"
+expect visible "Tout réinitialiser (1)"
+tap "Rétablir par défaut (Activer la recherche)"
+settle
+expect visible "Activer la recherche (/)"
+expect gone "Tout réinitialiser (1)"
+expect noerrors

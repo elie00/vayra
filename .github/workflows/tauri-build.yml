@@ -2,30 +2,37 @@ name: tauri-build
 
 on:
   workflow_dispatch:
+    inputs:
+      agent_driver:
+        description: "Build Windows with VITE_VAYRA_AGENT=1 (--no-bundle, disposable local recette ONLY — never install or ship)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Select target platforms
+        id: set-matrix
+        env:
+          AGENT_DRIVER: ${{ inputs.agent_driver }}
+        run: |
+          if [ "$AGENT_DRIVER" = "true" ]; then
+            echo 'matrix={"platform":[{"name":"Windows","runner":"windows-latest","target":"x86_64-pc-windows-msvc","bundle":"nsis","config":"--config src-tauri/tauri.windows.conf.json"}]}' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix={"platform":[{"name":"Windows","runner":"windows-latest","target":"x86_64-pc-windows-msvc","bundle":"nsis","config":"--config src-tauri/tauri.windows.conf.json"},{"name":"macOS-AppleSilicon","runner":"macos-latest","target":"aarch64-apple-darwin","bundle":"dmg","config":""},{"name":"Linux-x86_64","runner":"ubuntu-22.04","target":"x86_64-unknown-linux-gnu","bundle":"deb,appimage","config":""}]}' >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: ${{ matrix.platform.name }} (${{ matrix.platform.target }})
+    needs: prepare
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        platform:
-          - name: Windows
-            runner: windows-latest
-            target: x86_64-pc-windows-msvc
-            bundle: nsis
-            config: --config src-tauri/tauri.windows.conf.json
-          - name: macOS-AppleSilicon
-            runner: macos-latest
-            target: aarch64-apple-darwin
-            bundle: dmg
-            config: ""
-          - name: Linux-x86_64
-            runner: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            bundle: deb,appimage
-            config: ""
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v6
@@ -73,6 +80,12 @@ jobs:
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
+
+      - name: Fetch UI and subtitle fonts
+        shell: bash
+        run: |
+          pnpm setup:ui-fonts
+          pnpm setup:fonts
 
       - name: Fetch libmpv (Windows)
         if: contains(matrix.platform.runner, 'windows')
@@ -183,6 +196,7 @@ jobs:
           cargo test --all-targets
 
       - name: Tauri build
+        if: ${{ inputs.agent_driver != true }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -190,8 +204,14 @@ jobs:
           tauriScript: pnpm tauri
           args: --target ${{ matrix.platform.target }} --bundles ${{ matrix.platform.bundle }} ${{ matrix.platform.config }}
 
+      - name: Tauri build (agent driver test)
+        if: ${{ inputs.agent_driver == true && matrix.platform.name == 'Windows' }}
+        env:
+          VITE_VAYRA_AGENT: "1"
+        run: pnpm tauri build --no-bundle --target ${{ matrix.platform.target }} ${{ matrix.platform.config }}
+
       - name: Inspect Windows installer payload
-        if: matrix.platform.name == 'Windows'
+        if: ${{ matrix.platform.name == 'Windows' && inputs.agent_driver != true }}
         shell: pwsh
         run: |
           $bundleDir = "src-tauri/target/${{ matrix.platform.target }}/release/bundle/nsis"
@@ -231,7 +251,7 @@ jobs:
           Get-Item $installer.FullName | Format-List Name,Length,LastWriteTime
 
       - name: Upload artifacts
-        if: success()
+        if: ${{ success() && inputs.agent_driver != true }}
         uses: actions/upload-artifact@v6
         with:
           name: vayra-${{ matrix.platform.name }}
@@ -244,3 +264,12 @@ jobs:
             src-tauri/target/${{ matrix.platform.target }}/release/bundle/**/SHA256SUMS-*.txt
           retention-days: 14
           if-no-files-found: warn
+
+      - name: Upload agent test binary
+        if: ${{ success() && inputs.agent_driver == true && matrix.platform.name == 'Windows' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: vayra-Windows-agent-test
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/VAYRA.exe
+          retention-days: 3
+          if-no-files-found: error

@@ -1,0 +1,47 @@
+# Réglages : Extensions et connexions, cartes de navigation
+@cible desktop
+# Vérifie le hub « Extensions et connexions » et ses liens vers les écrans
+# locaux. Exclus des scénarios de réglages (comptes tiers, connexion ou envoi
+# de données hors de l’appli) : Compte, Trakt, AniList, MyAnimeList, Simkl,
+# Letterboxd et CIRA.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap "Extensions et connexions"
+settle
+expect current "Extensions et connexions"
+
+tap "Gérer les extensions"
+settle
+expect current Extensions
+tap Paramètres
+settle
+tap "Extensions et connexions"
+settle
+expect current "Extensions et connexions"
+
+tap "Bibliothèque et métadonnées"
+settle
+expect current "Bibliothèque et métadonnées"
+tap "Extensions et connexions"
+settle
+expect current "Extensions et connexions"
+
+tap "Sources de lecture"
+settle
+expect current "Sources de lecture"
+tap "Extensions et connexions"
+settle
+expect current "Extensions et connexions"
+
+expect visible Trakt
+expect visible AniList
+expect visible MyAnimeList
+expect visible Simkl
+expect visible Letterboxd
+expect visible CIRA
+expect noerrors

@@ -1,0 +1,94 @@
+# Réglages : Sources de lecture, chaque contrôle
+@cible desktop
+# Chaque choix est changé puis remis en place. Part d’un profil jetable
+# (VAYRA_DATA_DIR), configuration du premier lancement passée : filtre Strict,
+# disposition Stremio, descriptions complètes activées, ordre des addons,
+# autres bascules désactivées. Exclus : champs de clés API Debrid
+# (Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link), cartes de services
+# et d’addons manuels, et liens externes.
+
+restart
+wait Accueil 30000
+settle
+tap Paramètres
+settle
+expect gone Chargement… 15000
+tap "Extensions et connexions"
+settle
+tap "Sources de lecture"
+settle
+expect current "Sources de lecture"
+
+tap Équilibré
+settle
+expect on Équilibré
+expect off Strict
+tap Désactivé
+settle
+expect on Désactivé
+tap Strict
+settle
+expect on Strict
+expect off Désactivé
+
+tap Condensé
+settle
+expect on Condensé
+expect off Stremio
+tap Stremio
+settle
+expect on Stremio
+expect off Condensé
+
+tap "Placer Actualiser près de Retour"
+settle
+expect on "Placer Actualiser près de Retour"
+tap "Placer Actualiser près de Retour"
+settle
+expect off "Placer Actualiser près de Retour"
+
+tap "Afficher le nom du torrent"
+settle
+expect on "Afficher le nom du torrent"
+tap "Afficher le nom du torrent"
+settle
+expect off "Afficher le nom du torrent"
+
+tap "Afficher les descriptions complètes"
+settle
+expect off "Afficher les descriptions complètes"
+tap "Afficher les descriptions complètes"
+settle
+expect on "Afficher les descriptions complètes"
+
+tap "Activer le saut de pub injectée"
+settle
+expect on "Activer le saut de pub injectée"
+expect visible "Toujours afficher le bouton de signalement"
+expect visible "Passer les pubs injectées automatiquement"
+tap "Toujours afficher le bouton de signalement"
+settle
+expect on "Toujours afficher le bouton de signalement"
+tap "Toujours afficher le bouton de signalement"
+settle
+expect off "Toujours afficher le bouton de signalement"
+tap "Passer les pubs injectées automatiquement"
+settle
+expect on "Passer les pubs injectées automatiquement"
+tap "Passer les pubs injectées automatiquement"
+settle
+expect off "Passer les pubs injectées automatiquement"
+tap "Activer le saut de pub injectée"
+settle
+expect off "Activer le saut de pub injectée"
+expect gone "Toujours afficher le bouton de signalement"
+
+tap "Classement VAYRA"
+settle
+expect on "Classement VAYRA"
+expect off "Ordre des addons"
+tap "Ordre des addons"
+settle
+expect on "Ordre des addons"
+expect off "Classement VAYRA"
+expect noerrors
