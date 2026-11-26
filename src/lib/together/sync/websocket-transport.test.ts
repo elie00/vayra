@@ -117,6 +117,33 @@ describe("WebSocketTransport", () => {
     h.transport.close();
   });
 
+  it("calls realtime.setAuth() before subscribing to a private channel", async () => {
+    const order: string[] = [];
+    const h = makeHarness();
+    const setAuth = vi.fn(async () => {
+      order.push("setAuth");
+    });
+    (h.client as unknown as { realtime: { setAuth: () => Promise<void> } }).realtime = { setAuth };
+    const origChannel = h.client.channel as ReturnType<typeof vi.fn>;
+    origChannel.mockImplementation((topic: string, options: unknown) => {
+      const ch = new FakeChannel();
+      const origSubscribe = ch.subscribe.bind(ch);
+      ch.subscribe = (cb?: (status: string) => void) => {
+        if (topic === ROOM.topic) order.push("subscribe");
+        return origSubscribe(cb);
+      };
+      h.channels.push({ topic, options, channel: ch });
+      return ch as unknown as RealtimeChannel;
+    });
+
+    h.transport.join(ROOM_ID);
+    await flush();
+
+    expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["setAuth", "subscribe"]);
+    h.transport.close();
+  });
+
   it("builds the roster from active presence but trusts CIRA display names", async () => {
     const h = makeHarness();
     const rosters: RoomMember[][] = [];

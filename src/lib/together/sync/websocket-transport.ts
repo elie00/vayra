@@ -255,6 +255,9 @@ export class WebSocketTransport implements SyncTransport {
     try {
       const descriptor = await this.repository.getRoom(roomId);
       if (this.closed || generation !== this.generation || this.roomId !== roomId) return;
+      // Ensure the active JWT is bound to the Realtime socket before joining a private channel.
+      await this.client.realtime?.setAuth?.();
+      if (this.closed || generation !== this.generation || this.roomId !== roomId) return;
       this.descriptor = descriptor;
       this.removeRoomChannel();
       const channel = this.client.channel(descriptor.topic, {

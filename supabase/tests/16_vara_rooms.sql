@@ -96,6 +96,15 @@ begin
   if n <> 2 then raise exception 'TEST_FAILED: member cannot receive room topic'; end if;
   insert into realtime.messages (topic, extension, event, payload, private)
   values (v_topic, 'broadcast', 'cmd', '{"action":"play"}'::jsonb, true);
+  -- Supabase Realtime channel-join probe inserts with event = NULL.
+  insert into realtime.messages (topic, extension, event, payload, private)
+  values (v_topic, 'broadcast', null, '{}'::jsonb, true);
+  begin
+    insert into realtime.messages (topic, extension, event, payload, private)
+    values (v_topic, 'broadcast', 'unknown_event', '{}'::jsonb, true);
+    raise exception 'TEST_FAILED: member sent unknown broadcast event';
+  exception when insufficient_privilege then null;
+  end;
   begin
     insert into realtime.messages (topic, extension, event, payload, private)
     values (v_topic, 'broadcast', 'state', '{"rev":3}'::jsonb, true);
@@ -111,6 +120,12 @@ begin
     insert into realtime.messages (topic, extension, event, payload, private)
     values (v_topic, 'broadcast', 'cmd', '{}'::jsonb, true);
     raise exception 'TEST_FAILED: stranger sent to room topic';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into realtime.messages (topic, extension, event, payload, private)
+    values (v_topic, 'broadcast', null, '{}'::jsonb, true);
+    raise exception 'TEST_FAILED: stranger passed null-event broadcast probe';
   exception when insufficient_privilege then null;
   end;
 
