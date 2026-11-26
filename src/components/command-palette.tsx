@@ -102,7 +102,7 @@ export function CommandPalette() {
             id: "luma-resume",
             label: t("Resume {title} with LUMA", { title: resume.presentation.title }),
             description: resumeDescription(resume, t),
-            keywords: ["resume", "continue", "watch", "play", "luma", resume.presentation.title],
+            keywords: ["resume", "continue", "watch", "play", "up next", "queue", "à suivre", resume.presentation.title],
             kind: "resume" as const,
             run: go(() => {
               const target = resolveLumaResumeTarget(resume);

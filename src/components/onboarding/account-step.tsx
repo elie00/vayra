@@ -68,7 +68,7 @@ export function AccountStep() {
           {t("Your VAYRA account")}
         </h1>
         <p className="max-w-[48ch] text-[15px] leading-relaxed text-ink-muted">
-          {t("Use one private VAYRA identity for your profiles, settings, CIRA, and VARA. Stremio stays an optional integration you can connect later in Settings.")}
+          {t("Use one private VAYRA identity for your profile, settings, Rooms, Circle, and Up Next. Stremio stays an optional integration you can connect later in Settings.")}
         </p>
       </div>
 

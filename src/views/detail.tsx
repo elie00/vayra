@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check, HardDrive, Layers, ListPlus, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, HardDrive, Layers, ListPlus, Pencil, Play, Plus, RadioTower, RotateCcw, Star } from "lucide-react";
 import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
 import { kitsuAnime } from "@/lib/providers/kitsu";
@@ -237,7 +237,7 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot, goBack, canGoBack } = useView();
+  const { setNavStack, setView, openPicker, openPlayer, openFilter, promoteMetaToRoot, goBack, canGoBack } = useView();
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
@@ -1369,6 +1369,16 @@ export function DetailView({
                         {t("Add to Watchlist")}
                       </>
                     )}
+                  </button>
+                )}
+                {actionStage < 2 && canUseCollections && (
+                  <button
+                    type="button"
+                    onClick={() => setView("salons")}
+                    className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-xl border border-edge-soft/80 bg-surface/82 px-4 text-[13.5px] font-medium text-ink backdrop-blur-xl transition-[color,background-color,border-color,transform] duration-150 hover:border-edge hover:bg-elevated active:scale-[0.98]"
+                  >
+                    <RadioTower size={15} strokeWidth={2} aria-hidden />
+                    {t("Watch in a room")}
                   </button>
                 )}
                 {actionStage < 2 && isAnime && (

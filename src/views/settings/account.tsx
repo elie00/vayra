@@ -424,7 +424,7 @@ export function AccountStub() {
     <div className="flex flex-col gap-5">
       <Section
         title={t("Profile")}
-        subtitle={t("One identity across VAYRA, CIRA, VARA, and LUMA.")}
+        subtitle={t("One identity across VAYRA, Rooms, Circle, and Up Next.")}
       >
         <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center gap-5">

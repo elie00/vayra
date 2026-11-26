@@ -140,6 +140,7 @@ const importService = () => import("@/views/service");
 const importSettings = () => import("@/views/settings");
 const importShows = () => import("@/views/shows");
 const importLibrary = () => import("@/views/library");
+const importSalons = () => import("@/views/salons");
 const importLive = () => import("@/views/live");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
@@ -176,6 +177,7 @@ const ServiceView = lazy(() => importService().then((m) => ({ default: m.Service
 const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings })));
 const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
+const SalonsView = lazy(() => importSalons().then((m) => ({ default: m.SalonsView })));
 const LiveView = lazy(() => importLive().then((m) => ({ default: m.LiveView })));
 const MatchDetailView = lazy(() => importMatchDetail().then((m) => ({ default: m.MatchDetailView })));
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
@@ -901,6 +903,7 @@ function Shell() {
   const showsTop = topKind === "shows";
   const unifiedLibraryDownloads = hasNativeDesktopUx();
   const libraryTop = topKind === "library" || (unifiedLibraryDownloads && topKind === "downloads");
+  const salonsTop = topKind === "salons";
   const liveTop = topKind === "live";
   const vodTop = topKind === "vod";
   const downloadsTop = !unifiedLibraryDownloads && topKind === "downloads";
@@ -969,6 +972,7 @@ function Shell() {
   const kidsAlive = useIdleEvict(kidsTop);
   const showsAlive = useIdleEvict(showsTop);
   const libraryAlive = useIdleEvict(libraryTop);
+  const salonsAlive = useIdleEvict(salonsTop);
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
@@ -1070,6 +1074,13 @@ function Shell() {
       <div className={layer(libraryTop)}>
         <Suspense fallback={<ViewLoading />}>
           <LibraryView active={libraryTop} />
+        </Suspense>
+      </div>
+    ) : null,
+    salons: salonsAlive ? (
+      <div className={layer(salonsTop)}>
+        <Suspense fallback={<ViewLoading />}>
+          <SalonsView active={salonsTop} />
         </Suspense>
       </div>
     ) : null,

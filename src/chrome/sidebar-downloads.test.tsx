@@ -54,6 +54,9 @@ vi.mock("@/lib/nav-drawer", () => ({
 vi.mock("@/chrome/sidebar/profile-chip", () => ({
   ProfileChip: () => <div data-testid="profile-chip" />,
 }));
+vi.mock("@/chrome/sidebar/use-salons-indicator", () => ({
+  useSalonsIndicator: () => ({ hasDot: false, pendingCount: 0, hasActiveRoom: false }),
+}));
 vi.mock("@/chrome/sidebar/collapse-toggle", () => ({
   CollapseToggle: () => <button type="button" aria-label="Toggle sidebar" />,
 }));

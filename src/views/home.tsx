@@ -75,6 +75,7 @@ import type { SourceRow } from "@/lib/custom-sources";
 import { hasNativeDesktopUx, isMobileTauri } from "@/lib/platform";
 import { MacPersonalSections } from "./home/mac-personal-sections";
 import { MacDiscoveryBanner } from "./home/mac-discovery-banner";
+import { ActiveRoomBanner } from "./home/active-room-banner";
 import { LumaResumeSection } from "./home/luma-resume-section";
 import {
   clearLibrarySnapshot,
@@ -961,7 +962,7 @@ export function Home({ active = true }: { active?: boolean }) {
               />
             </div>
           )}
-          {!hasNativeDesktopUx() && <><div data-scroll-anchor="cw">
+          {!hasNativeDesktopUx() && <><ActiveRoomBanner /><div data-scroll-anchor="cw">
             <LumaResumeSection />
           </div>
           <div data-scroll-anchor="cw-cloud">

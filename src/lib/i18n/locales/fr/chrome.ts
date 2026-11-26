@@ -9,6 +9,7 @@ const chrome: Record<string, string> = {
   "nav.playlists": "Playlists",
   "nav.calendar": "Calendrier",
   "nav.library": "Ma bibliothèque",
+  "nav.salons": "Salons",
   "nav.downloads": "Téléchargements",
   "nav.addons": "Addons",
   "nav.settings": "Paramètres",

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Popcorn } from "lucide-react";
+import { Popcorn, Users } from "lucide-react";
 import { AddonsIcon } from "@/components/icons/addons-icon";
 import { CatalogsIcon } from "@/components/icons/catalogs-icon";
 import { AnimeIcon } from "@/components/icons/anime-icon";
@@ -34,6 +34,7 @@ export type NavItemId =
   | "vod"
   | "calendar"
   | "library"
+  | "salons"
   | "downloads"
   | "addons"
   | "settings";
@@ -69,6 +70,7 @@ export const NAV_ITEMS = [
   { id: "vod", label: "nav.playlists", render: (active) => <PlaylistVodIcon active={active} />, view: "vod", section: "primary" },
   { id: "calendar", label: "nav.calendar", render: (active) => <CalendarIcon active={active} />, view: "calendar", section: "collections", parentalKey: "calendar" },
   { id: "library", label: "nav.library", render: (active) => <LibraryIcon active={active} />, view: "library", section: "collections", parentalKey: "library" },
+  { id: "salons", label: "nav.salons", render: (active) => <Users size={22} strokeWidth={active ? 2.2 : 1.8} className={active ? "" : "opacity-75"} />, view: "salons", section: "collections" },
   { id: "downloads", label: "nav.downloads", render: (active) => <DownloadsNavIcon active={active} />, view: "downloads", section: "collections", requires: "nativeDownloads" },
   { id: "addons", label: "nav.addons", render: (active) => <AddonsIcon active={active} />, view: "addons", section: "collections", parentalKey: "addons" },
   { id: "settings", label: "nav.settings", render: (active) => <SettingsIcon active={active} />, view: "settings", section: "system", pinGated: true },

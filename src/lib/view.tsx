@@ -13,7 +13,7 @@ import { runNavGuard } from "./nav-guard";
 const PLATFORM_CAPABILITIES = currentPlatformCapabilities();
 
 const isAnimeMetaId = (id: string) => /^(kitsu|mal|anilist|anidb):/.test(id);
-export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "live" | "vod" | "downloads" | "wrapped" | "sports" | "stats";
+export type View = "home" | "settings" | "anime" | "discover" | "catalogs" | "addons" | "calendar" | "movies" | "shows" | "kids" | "library" | "salons" | "live" | "vod" | "downloads" | "wrapped" | "sports" | "stats";
 
 export type PickerIntent = "play" | "download" | "download-season";
 
@@ -104,6 +104,7 @@ export type Frame =
   | { kind: "shows" }
   | { kind: "kids" }
   | { kind: "library" }
+  | { kind: "salons" }
   | { kind: "live" }
   | { kind: "vod" }
   | { kind: "downloads" }
@@ -260,6 +261,8 @@ function frameKey(f: Frame): string {
       return "kids";
     case "library":
       return "library";
+    case "salons":
+      return "salons";
     case "live":
       return "live";
     case "vod":
@@ -381,6 +384,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "shows") return "shows";
       if (f.kind === "kids") return "kids";
       if (f.kind === "library") return "library";
+      if (f.kind === "salons") return "salons";
       if (f.kind === "live") return "live";
       if (f.kind === "vod") return "vod";
       if (f.kind === "downloads") return "downloads";
@@ -580,6 +584,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         scrollMem.current.clear();
         rowScrollMem.current.clear();
         return [{ kind: "library" }];
+      }
+      if (v === "salons") {
+        scrollMem.current.clear();
+        rowScrollMem.current.clear();
+        return [{ kind: "salons" }];
       }
       if (v === "live") {
         scrollMem.current.clear();

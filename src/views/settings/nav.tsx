@@ -348,9 +348,9 @@ const ALL_NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
       },
       {
         id: "cira",
-        label: "CIRA",
+        label: "Circle",
         Icon: IconCira,
-        keywords: ["cira", "friends", "circle", "invite", "invitation", "presence", "social", "block", "handle"],
+        keywords: ["cira", "circle", "cercle", "salons", "rooms", "friends", "invite", "invitation", "presence", "social", "block", "handle"],
       },
       {
         id: "library",

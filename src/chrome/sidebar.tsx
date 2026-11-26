@@ -8,6 +8,7 @@ import {
   type NavItem as CanonicalNavItem,
 } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
+import { useSalonsIndicator } from "@/chrome/sidebar/use-salons-indicator";
 import { useActiveDownloadCount } from "@/lib/download/downloads-store";
 import { effectiveBinding, formatBindingForDisplay } from "@/lib/hotkeys";
 import { useT } from "@/lib/i18n";
@@ -237,6 +238,7 @@ function ScrollableNav({
 }) {
   const { settings, update } = useSettings();
   const activeDownloads = useActiveDownloadCount();
+  const salonsIndicator = useSalonsIndicator();
   const t = useT();
   const isItemVisible = (item: CanonicalNavItem) => {
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
@@ -294,16 +296,27 @@ function ScrollableNav({
         <div className="flex flex-col gap-1">
           {visiblePrimary.map((item) => {
             const isLibraryRow = mac && item.id === "library";
+            const isSalonsRow = item.id === "salons";
             const showsDownloadsBadge =
               activeDownloads > 0 && (mac ? isLibraryRow : item.view === "downloads");
+            const showsSalonsBadge =
+              isSalonsRow && !collapsed && salonsIndicator.pendingCount > 0;
+            const showsSalonsDot =
+              isSalonsRow && salonsIndicator.hasDot && !showsSalonsBadge;
             return (
               <NavItem
                 key={item.id}
                 {...item}
                 label={labelFor(item)}
                 collapsed={collapsed}
-                badge={!collapsed && showsDownloadsBadge ? activeDownloads : undefined}
-                dot={collapsed && mac && activeDownloads > 0 && isLibraryRow}
+                badge={
+                  !collapsed && showsDownloadsBadge
+                    ? activeDownloads
+                    : showsSalonsBadge
+                      ? salonsIndicator.pendingCount
+                      : undefined
+                }
+                dot={(collapsed && mac && activeDownloads > 0 && isLibraryRow) || showsSalonsDot}
                 active={
                   view === item.view ||
                   (mac && item.id === "discover" && isExploreView(view)) ||

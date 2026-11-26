@@ -87,6 +87,7 @@ import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
 import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
+import { SyncDrawer } from "@/components/player/sync-drawer";
 import { VaraStatusPill } from "@/components/player/vara-status-pill";
 
 let hdrFallbackNoticeShown = false;
@@ -142,10 +143,16 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   } = useTogether();
   const { user: vayraUser } = useVayraAccount();
   const {
+    repo: remoteVaraRepo,
     activeRoom: remoteVaraRoom,
     transport: remoteVeyaTransport,
+    refresh: refreshRemoteVara,
     leaveActiveRoom: leaveRemoteVara,
   } = useVara();
+  const [syncDrawerOpen, setSyncDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (!remoteVaraRoom) setSyncDrawerOpen(false);
+  }, [remoteVaraRoom]);
   const stageRef = useRef<HTMLDivElement>(null);
   const videoMountRef = useRef<HTMLDivElement>(null);
   const bridgeRef = useRef<PlayerBridge | null>(null);
@@ -1072,15 +1079,63 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
-      {remoteVaraRoom && chromeVisible && !pipMode ? (
+      {remoteVaraRoom && (chromeVisible || syncDrawerOpen) && !pipMode ? (
         <div className="pointer-events-none absolute left-1/2 top-4 z-[130] -translate-x-1/2">
           <VaraStatusPill
             syncActive={remoteVeyaActive}
             isHost={remoteVaraRoom.hostId === vayraUser?.id}
             memberCount={remoteVaraRoom.members.length}
-            onLeaveRoom={() => void leaveRemoteVara()}
+            drawerOpen={syncDrawerOpen}
+            onToggleDrawer={() => setSyncDrawerOpen((open) => !open)}
           />
         </div>
+      ) : null}
+      {remoteVaraRoom && syncDrawerOpen && !pipMode ? (
+        <SyncDrawer
+          room={remoteVaraRoom}
+          currentUserId={vayraUser?.id ?? null}
+          syncActive={remoteVeyaActive}
+          onClose={() => setSyncDrawerOpen(false)}
+          onCopyInviteLink={async () => {
+            if (!remoteVaraRepo) return false;
+            try {
+              const link = await remoteVaraRepo.createLink(remoteVaraRoom.id);
+              await navigator.clipboard.writeText(link.url);
+              return true;
+            } catch {
+              return false;
+            }
+          }}
+          onClaimHost={async () => {
+            if (!remoteVaraRepo) return;
+            try {
+              await remoteVaraRepo.claimHost(remoteVaraRoom.id);
+              await refreshRemoteVara();
+            } catch {
+              /* host lease may still be active; room state stays unchanged */
+            }
+          }}
+          onTransferHost={async (targetUserId) => {
+            if (!remoteVaraRepo) return;
+            try {
+              await remoteVaraRepo.transferHost(remoteVaraRoom.id, targetUserId);
+              await refreshRemoteVara();
+            } catch {
+              /* transfer may fail if target left; room state stays unchanged */
+            }
+          }}
+          onForceResync={() => {
+            if (remoteVeyaTransport) {
+              remoteVeyaTransport.leave(remoteVaraRoom.id);
+              remoteVeyaTransport.join(remoteVaraRoom.id);
+            }
+            void refreshRemoteVara();
+          }}
+          onLeaveRoom={() => {
+            setSyncDrawerOpen(false);
+            void leaveRemoteVara();
+          }}
+        />
       ) : null}
       {sourceError && (
         <SourceErrorCard

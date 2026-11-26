@@ -22,6 +22,7 @@ const en: Record<string, string> = {
   "nav.playlists": "Playlists",
   "nav.calendar": "Calendar",
   "nav.library": "My Library",
+  "nav.salons": "Rooms",
   "nav.downloads": "Downloads",
   "nav.addons": "Addons",
   "nav.settings": "Settings",

@@ -5,7 +5,7 @@
 # lecture » (#13) portent le même nom dans la barre latérale et dans les cartes
 # du hub. Exclus des scénarios de réglages (comptes tiers, connexion ou envoi
 # de données hors de l’appli) : Compte, Trakt, AniList, MyAnimeList, Simkl,
-# Letterboxd et CIRA.
+# Letterboxd et Cercle.
 
 restart
 wait Accueil 30000
@@ -41,7 +41,7 @@ tap #11
 settle
 expect current "Extensions et connexions"
 
-# Cartes du hub pour les services exclus (Trakt #28 à CIRA #33 ; leurs noms
+# Cartes du hub pour les services exclus (Trakt #28 à Cercle #33 ; leurs noms
 # existent aussi dans la barre latérale en #14..#19).
 expect visible #28
 expect visible #29
