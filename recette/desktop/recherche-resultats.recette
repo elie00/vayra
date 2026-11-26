@@ -1,7 +1,9 @@
-# Recherche : des résultats, et le meilleur s’ouvre (réseau non filtré)
+# Recherche : des résultats, et un résultat s’ouvre (réseau non filtré)
 @cible desktop
 # Demande des sources joignables : sur le PC pro, dont le filtrage les bloque,
-# il échoue sur l’alerte « Certaines sources n’ont pas répondu ».
+# il échoue sur l’alerte « Certaines sources n’ont pas répondu ». Sur un profil
+# jetable sans clé TMDB, les résultats viennent de Cinemeta (« Depuis vos
+# extensions ») sans encart « Meilleur résultat ».
 
 restart
 wait Accueil 30000
@@ -10,15 +12,15 @@ settle
 tap Rechercher
 settle
 expect dialog Rechercher
-type Rechercher dune
+type "Rechercher films, séries" dune
 settle
 expect gone "Recherche…" 40000
 expect gone "sources n’ont pas répondu" 2000
 expect gone "La recherche n’a pas pu aboutir" 1000
-expect visible "Meilleur résultat" 20000
+expect visible "Dune: Part Two" 20000
 settle
 
-tap "Meilleur résultat"
+tap "Dune: Part Two"
 settle
 expect closed Rechercher
 expect visible Dune 15000

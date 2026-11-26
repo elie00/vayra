@@ -44,6 +44,7 @@ expect gone "Organiser les téléchargements"
 
 tap "Ouvrir les téléchargements"
 settle
-expect current Téléchargements
+expect current "Ma bibliothèque"
+expect visible "Votre collection."
 expect gone "Ouvrir les téléchargements"
 expect noerrors

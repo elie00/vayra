@@ -1,7 +1,9 @@
 # Réglages : Extensions et connexions, cartes de navigation
 @cible desktop
 # Vérifie le hub « Extensions et connexions » et ses liens vers les écrans
-# locaux. Exclus des scénarios de réglages (comptes tiers, connexion ou envoi
+# locaux. Les entrées « Bibliothèque et métadonnées » (#12) et « Sources de
+# lecture » (#13) portent le même nom dans la barre latérale et dans les cartes
+# du hub. Exclus des scénarios de réglages (comptes tiers, connexion ou envoi
 # de données hors de l’appli) : Compte, Trakt, AniList, MyAnimeList, Simkl,
 # Letterboxd et CIRA.
 
@@ -17,31 +19,34 @@ expect current "Extensions et connexions"
 
 tap "Gérer les extensions"
 settle
-expect current Extensions
+expect gone "Gérer les extensions"
+expect visible Installé
 tap Paramètres
 settle
 tap "Extensions et connexions"
 settle
 expect current "Extensions et connexions"
 
-tap "Bibliothèque et métadonnées"
+tap #12
 settle
 expect current "Bibliothèque et métadonnées"
-tap "Extensions et connexions"
+tap #11
 settle
 expect current "Extensions et connexions"
 
-tap "Sources de lecture"
+tap #13
 settle
 expect current "Sources de lecture"
-tap "Extensions et connexions"
+tap #11
 settle
 expect current "Extensions et connexions"
 
-expect visible Trakt
-expect visible AniList
-expect visible MyAnimeList
-expect visible Simkl
-expect visible Letterboxd
-expect visible CIRA
+# Cartes du hub pour les services exclus (Trakt #28 à CIRA #33 ; leurs noms
+# existent aussi dans la barre latérale en #14..#19).
+expect visible #28
+expect visible #29
+expect visible #30
+expect visible #31
+expect visible #32
+expect visible #33
 expect noerrors

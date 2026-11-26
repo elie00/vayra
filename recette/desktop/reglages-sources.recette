@@ -5,7 +5,8 @@
 # disposition Stremio, descriptions complètes activées, ordre des addons,
 # autres bascules désactivées. Exclus : champs de clés API Debrid
 # (Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link), cartes de services
-# et d’addons manuels, et liens externes.
+# et d’addons manuels, et liens externes. L’entrée de navigation porte le nom
+# d’une carte de la page Extensions : elle est visée en #13.
 
 restart
 wait Accueil 30000
@@ -15,7 +16,7 @@ settle
 expect gone Chargement… 15000
 tap "Extensions et connexions"
 settle
-tap "Sources de lecture"
+tap #13
 settle
 expect current "Sources de lecture"
 
@@ -31,14 +32,14 @@ settle
 expect on Strict
 expect off Désactivé
 
-tap Condensé
+tap "Condensé Par défaut"
 settle
-expect on Condensé
-expect off Stremio
-tap Stremio
+expect on "Condensé Par défaut"
+expect off "Stremio Liste de sources"
+tap "Stremio Liste de sources"
 settle
-expect on Stremio
-expect off Condensé
+expect on "Stremio Liste de sources"
+expect off "Condensé Par défaut"
 
 tap "Placer Actualiser près de Retour"
 settle

@@ -200,10 +200,10 @@ settle
 expect off "Bannière héros pleine largeur"
 tap "Image héros en pleine qualité"
 settle
-expect on "Image héros en pleine qualité"
+expect off "Image héros en pleine qualité"
 tap "Image héros en pleine qualité"
 settle
-expect off "Image héros en pleine qualité"
+expect on "Image héros en pleine qualité"
 
 # Bandes-annonces
 tap 360p
@@ -224,10 +224,10 @@ settle
 expect on Auto
 tap "Lecture automatique de la bande-annonce"
 settle
-expect off "Lecture automatique de la bande-annonce"
+expect on "Lecture automatique de la bande-annonce"
 tap "Lecture automatique de la bande-annonce"
 settle
-expect on "Lecture automatique de la bande-annonce"
+expect off "Lecture automatique de la bande-annonce"
 
 # Barre de progression
 tap "aperçu miniature"

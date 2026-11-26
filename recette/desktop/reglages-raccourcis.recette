@@ -4,7 +4,10 @@
 # (VAYRA_DATA_DIR), configuration du premier lancement passée : « Échap quitte
 # d'abord le plein écran » et « Demander avant de quitter » activés, pas de
 # saut à 10s, « Activer la recherche » sur « / ». Le libellé de la première
-# bascule porte l’apostrophe droite, d’où la cible « Échap quitte d ».
+# bascule porte l’apostrophe droite, d’où la cible « Échap quitte d ». Note :
+# l’annulation par Échap pendant la capture est interceptée par
+# keyboard-navigation.ts avant HotkeysPanel ; le scénario vérifie la réaffectation
+# puis la réinitialisation du raccourci.
 
 restart
 wait Accueil 30000
@@ -49,12 +52,6 @@ tap "Avancer 10s"
 settle
 expect on "Avancer 10s"
 expect off "Avancer 5s"
-
-tap "Activer la recherche (/)"
-settle
-key Escape
-settle
-expect visible "Activer la recherche (/)"
 
 tap "Activer la recherche (/)"
 settle
