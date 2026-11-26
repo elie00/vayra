@@ -1,12 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Camera, ImagePlus, QrCode, Share2, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import QRCode from "qrcode";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { avatarUrl } from "@/lib/avatars/url";
-
-const AvatarCatalogModal = lazy(() =>
-  import("@/components/avatar-picker/avatar-catalog-modal").then((m) => ({ default: m.AvatarCatalogModal })),
-);
 import { copyText } from "@/lib/clipboard";
 import { useCira } from "@/lib/cira/provider";
 import { CiraError } from "@/lib/cira";
@@ -142,119 +138,32 @@ function SmallButton({
   );
 }
 
-function ProfileCard() {
+function UnifiedIdentityCard() {
   const t = useT();
-  const { me, repo, refresh } = useCira();
-  const [handle, setHandle] = useState(me?.handle ?? "");
-  const [displayName, setDisplayName] = useState(me?.displayName ?? "");
-  const [avatarKey, setAvatarKey] = useState<string | null>(me?.avatarKey ?? null);
-  const [avatarOpen, setAvatarOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
-
-  useEffect(() => {
-    setHandle(me?.handle ?? "");
-    setDisplayName(me?.displayName ?? "");
-    setAvatarKey(me?.avatarKey ?? null);
-  }, [me]);
-
-  const normalizedHandle = handle.trim().toLowerCase();
-  const handleValid = /^[a-z0-9][a-z0-9_]{2,23}$/.test(normalizedHandle);
-  const nameValid = displayName.trim().length >= 1 && displayName.trim().length <= 48;
-  const dirty =
-    normalizedHandle !== (me?.handle ?? "") || displayName.trim() !== (me?.displayName ?? "") ||
-    avatarKey !== (me?.avatarKey ?? null);
-
-  const save = async () => {
-    if (!repo || busy) return;
-    setBusy(true);
-    setNotice(null);
-    try {
-      await repo.saveProfile({
-        handle: normalizedHandle,
-        displayName: displayName.trim(),
-        avatarKey,
-      });
-      await refresh();
-      setNotice({ text: t("Saved"), tone: "ok" });
-    } catch (err) {
-      setNotice({ text: errorText(t, err), tone: "error" });
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { me } = useCira();
+  const { setActive } = useSettingsActiveContext();
+  if (!me) return null;
 
   return (
-    <Section
-      title={t("Your CIRA identity")}
-      subtitle={
-        me
-          ? t("The handle and name your CIRA see. Your handle is how people add you.")
-          : t("Pick a unique handle to start connecting with your CIRA — your close circle on VAYRA.")
-      }
-    >
-      <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => setAvatarOpen(true)} className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-elevated ring-2 ring-edge-soft transition hover:ring-ink">
-            {avatarKey ? <img src={avatarUrl(avatarKey)} alt="" className="h-full w-full object-cover" /> : <CatAvatar className="h-full w-full" />}
-          </button>
-          <div>
-            <button type="button" onClick={() => setAvatarOpen(true)} className="text-[13px] font-medium text-ink hover:underline">{t("Choose an avatar")}</button>
-            <p className="text-[11.5px] text-ink-subtle">{t("Visible only to your CIRA relations and private groups.")}</p>
-          </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-elevated ring-1 ring-edge-soft">
+          {me.avatarKey ? (
+            <img src={avatarUrl(me.avatarKey)} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <CatAvatar className="h-full w-full" />
+          )}
+        </span>
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-[14px] font-semibold text-ink">{me.displayName}</span>
+          <span className="truncate font-mono text-[12px] text-ink-subtle">@{me.handle}</span>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex min-w-52 flex-1 flex-col gap-1.5">
-            <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-              {t("Handle")}
-            </label>
-            <input
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder={t("e.g. marie_04")}
-              spellCheck={false}
-              autoComplete="off"
-              className="h-11 rounded-xl border border-edge bg-elevated px-3 font-mono text-[14px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
-            />
-            {handle.length > 0 && !handleValid && (
-              <span className="text-[11.5px] text-ink-subtle">
-                {t("3-24 characters: lowercase letters, digits, underscore.")}
-              </span>
-            )}
-          </div>
-          <div className="flex min-w-52 flex-1 flex-col gap-1.5">
-            <label className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-              {t("Display name")}
-            </label>
-            <input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={t("How your CIRA see you")}
-              autoComplete="off"
-              className="h-11 rounded-xl border border-edge bg-elevated px-3 text-[14px] text-ink placeholder:text-ink-subtle/55 outline-none focus:border-ink"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <SmallButton
-            label={busy ? t("Saving…") : me ? t("Save") : t("Create profile")}
-            tone="primary"
-            onClick={() => void save()}
-            disabled={!handleValid || !nameValid || !dirty || busy}
-          />
-          {notice && <InlineNotice text={notice.text} tone={notice.tone} />}
-        </div>
-        {avatarOpen && (
-          <Suspense fallback={null}>
-            <AvatarCatalogModal
-              current={avatarKey ? avatarUrl(avatarKey) : null}
-              onPick={(id) => { setAvatarKey(id); setAvatarOpen(false); }}
-              onClose={() => setAvatarOpen(false)}
-            />
-          </Suspense>
-        )}
       </div>
-    </Section>
+      <SmallButton
+        label={t("Edit in Account")}
+        onClick={() => setActive("account")}
+      />
+    </div>
   );
 }
 
@@ -913,7 +822,7 @@ function InviteDecisionModal() {
 
 export function CiraPanel() {
   const t = useT();
-  const { status, me, refresh } = useCira();
+  const { status, me, autoProvisioning, autoProvisionError, retryProvision, refresh } = useCira();
   const { loading: accountLoading, refreshAccess } = useVayraAccount();
   const { setActive } = useSettingsActiveContext();
   const [accessNotice, setAccessNotice] = useState<string | null>(null);
@@ -982,10 +891,12 @@ export function CiraPanel() {
     );
   }
 
-  if (status === "loading") {
+  if (status === "loading" || (!me && autoProvisioning)) {
     return (
       <Section title={t("CIRA")} subtitle={t("Your close circle on VAYRA.")}>
-        <p className="text-[13px] text-ink-subtle">{t("Loading…")}</p>
+        <p className="text-[13px] text-ink-subtle">
+          {autoProvisioning ? t("Setting up your VAYRA identity…") : t("Loading…")}
+        </p>
       </Section>
     );
   }
@@ -1003,23 +914,38 @@ export function CiraPanel() {
     );
   }
 
+  if (!me) {
+    return (
+      <Section title={t("CIRA")} subtitle={t("Your close circle on VAYRA.")}>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <p className="text-[13px] text-ink-subtle">
+            {autoProvisionError
+              ? errorText(t, autoProvisionError)
+              : t("Your CIRA profile could not be prepared automatically.")}
+          </p>
+          <SmallButton
+            label={t("Try again")}
+            tone="primary"
+            onClick={() => void retryProvision()}
+          />
+        </div>
+      </Section>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PrivateBetaGuideCard />
-      <ProfileCard />
-      {me && (
-        <>
-          <RequestsCard />
-          <InboxCard />
-          <FriendsCard />
-          <CiraGroupsCard />
-          <VaraRoomsCard />
-          <PrivateBetaHelpCard />
-          <InviteCard />
-          <PresenceCard />
-          <BlocksCard />
-        </>
-      )}
+      <UnifiedIdentityCard />
+      <RequestsCard />
+      <InboxCard />
+      <FriendsCard />
+      <CiraGroupsCard />
+      <VaraRoomsCard />
+      <PrivateBetaHelpCard />
+      <InviteCard />
+      <PresenceCard />
+      <BlocksCard />
       <InviteDecisionModal />
     </div>
   );

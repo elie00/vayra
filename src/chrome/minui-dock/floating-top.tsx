@@ -1,4 +1,4 @@
-import { ArrowLeft, LogOut, Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
+import { ArrowLeft, LogOut, Pencil, Search, Settings as SettingsIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { HarborMark } from "@/components/icons/harbor-mark";
@@ -141,7 +141,8 @@ function ProfilePill({
 }) {
   const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
-  const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
+  const { activeProfile } = useProfiles();
+  const { openSettings } = useView();
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -159,7 +160,6 @@ function ProfilePill({
     activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "var(--color-accent)";
   const harborAvatar = settings.harborAvatar;
-  const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
 
   return (
     <div ref={ref} className="relative">
@@ -188,54 +188,16 @@ function ProfilePill({
               <div className="truncate text-[11.5px] text-ink-subtle">{user.email}</div>
             )}
           </div>
-          {otherProfiles.length > 0 && (
-            <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">
-              <span className="px-2.5 pb-1 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
-                {t("profile.switch")}
-              </span>
-              {otherProfiles.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    if (p.passwordHash) openPicker({ kind: "unlock", profileId: p.id });
-                    else selectProfile(p.id);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
-                >
-                  <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-canvas"
-                    style={{ background: p.color }}
-                  >
-                    {p.name.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="truncate text-[12.5px] text-ink">{p.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
           <div className="flex flex-col">
             <MenuRow
               onClick={() => {
-                openPicker({ kind: "list" });
+                openSettings("account");
                 setOpen(false);
               }}
-              icon={<Users size={14} strokeWidth={2.2} />}
+              icon={<Pencil size={14} strokeWidth={2.2} />}
             >
-              {t("profile.whoWatching")}
+              {t("Edit profile")}
             </MenuRow>
-            {activeProfile && (
-              <MenuRow
-                onClick={() => {
-                  openPicker({ kind: "edit", profileId: activeProfile.id });
-                  setOpen(false);
-                }}
-                icon={<Pencil size={14} strokeWidth={2.2} />}
-              >
-                {t("Edit profile")}
-              </MenuRow>
-            )}
             <MenuRow
               onClick={() => {
                 onOpenSettings();

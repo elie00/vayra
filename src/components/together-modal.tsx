@@ -1,5 +1,5 @@
 import { Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { Meta } from "@/lib/cinemeta";
 import { copyText } from "@/lib/clipboard";
@@ -28,13 +28,12 @@ export function TogetherPopover({
    * content can live inside the mobile bottom sheet (src/mobile/together-sheet.tsx). */
   variant?: "popover" | "sheet";
 } = {}) {
-  const { enabled, snapshot, chat, displayName, setDisplayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId } = useTogether();
+  const { enabled, snapshot, chat, displayName, startSession, joinSession, leaveSession, retrySession, sendChat, closeModal, clientId } = useTogether();
   const { openSettings, openPicker, topKind } = useView();
   const { settings, update } = useSettings();
   const { avatar: selfAvatar, color: selfColor } = useSelfIdentity();
   const t = useT();
   const [joinCode, setJoinCode] = useState("");
-  const [draftName, setDraftName] = useState(displayName);
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<"default" | "link">("default");
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -42,10 +41,6 @@ export function TogetherPopover({
   // close. The "sheet" variant lives inside the mobile bottom sheet which owns
   // its own focus handling, so leave it alone.
   useFocusTrap(dialogRef, variant !== "sheet");
-
-  useEffect(() => {
-    setDraftName(displayName);
-  }, [displayName]);
 
   const inSession = snapshot.state === "joined" && !!snapshot.room;
   const connecting = snapshot.state === "connecting";
@@ -82,10 +77,6 @@ export function TogetherPopover({
     if (!(await copyText(snapshot.room))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
-  };
-
-  const commitName = () => {
-    if (draftName.trim() && draftName.trim() !== displayName) setDisplayName(draftName);
   };
 
   const goToSettings = () => {
@@ -202,17 +193,20 @@ export function TogetherPopover({
 
       {view === "default" && enabled && !inSession && (
         <>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-ink-subtle">{t("Your name")}</span>
-            <input
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              onBlur={commitName}
-              onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
-              maxLength={32}
-              className="h-10 rounded-lg border border-edge bg-canvas px-3 text-[13.5px] text-ink transition-colors focus:border-accent"
-            />
-          </label>
+          <div className="flex items-center gap-2.5 rounded-xl border border-edge-soft bg-canvas/50 px-3 py-2">
+            <Avatar name={displayName} color={selfColor} src={selfAvatar} size={28} />
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{displayName}</span>
+            <button
+              type="button"
+              onClick={() => {
+                closeModal();
+                openSettings("account");
+              }}
+              className="shrink-0 text-[11.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+            >
+              {t("Edit profile")}
+            </button>
+          </div>
 
           <button
             onClick={handleStart}

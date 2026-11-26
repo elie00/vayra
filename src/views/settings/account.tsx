@@ -2,27 +2,29 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
 import { AuthModal, StremioAuthModal } from "@/components/auth-modal";
+import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
 import { useAuth } from "@/lib/auth";
+import { avatarUrl } from "@/lib/avatars/url";
+import { CiraError } from "@/lib/cira";
+import { sanitizeCiraAvatarKey } from "@/lib/cira/auto-profile";
+import { useCira } from "@/lib/cira/provider";
+import { useT } from "@/lib/i18n";
+import { isMobileTauri } from "@/lib/platform";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
-import { useT } from "@/lib/i18n";
-import { isMobileTauri } from "@/lib/platform";
 import { useVayraAccount } from "@/lib/vayra-account";
-import { ColorPicker } from "./color-picker";
-import { Section } from "./shared";
 import { AvatarRing } from "./account/avatar-ring";
 import { resizeAvatar } from "./account/avatar-utils";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
-import { ProfilesStrip } from "./account/profiles-strip";
-import { StartupDefaults } from "./account/startup-defaults";
-import { SettingsScopeCard } from "./account/settings-scope-card";
-import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { avatarUrl } from "@/lib/avatars/url";
+import { ColorPicker } from "./color-picker";
+import { Section } from "./shared";
 
 const AvatarCatalogModal = lazy(() =>
   import("@/components/avatar-picker/avatar-catalog-modal").then((m) => ({ default: m.AvatarCatalogModal })),
 );
+
+const HANDLE_RX = /^[a-z0-9][a-z0-9_]{2,23}$/;
 
 export function AccountStub() {
   const t = useT();
@@ -37,18 +39,86 @@ export function AccountStub() {
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
   const { activeProfile, updateProfile } = useProfiles();
-  const pushIdentity = (patch: { harborColor?: string; harborAvatar?: string | null }) => {
+  const cira = useCira();
+
+  const [handleDraft, setHandleDraft] = useState(cira.me?.handle ?? "");
+  const [editingHandle, setEditingHandle] = useState(false);
+  const [handleBusy, setHandleBusy] = useState(false);
+  const [handleNotice, setHandleNotice] = useState<{ text: string; tone: "error" | "ok" } | null>(null);
+
+  useEffect(() => {
+    setHandleDraft(cira.me?.handle ?? "");
+  }, [cira.me?.handle]);
+
+  const syncCiraIdentity = (patch: { displayName?: string; avatarKey?: string | null }) => {
+    if (!cira.me) return;
+    const nextName = (patch.displayName ?? cira.me.displayName).trim();
+    if (!nextName) return;
+    const nextAvatar =
+      patch.avatarKey !== undefined ? sanitizeCiraAvatarKey(patch.avatarKey) : cira.me.avatarKey;
+    void cira
+      .saveProfile({
+        handle: cira.me.handle,
+        displayName: nextName.slice(0, 48),
+        avatarKey: nextAvatar,
+      })
+      .catch(() => undefined);
+  };
+
+  const pushIdentity = (
+    patch: { harborColor?: string; harborAvatar?: string | null },
+    ciraAvatarKey?: string | null,
+  ) => {
     update(patch);
-    if (!activeProfile) return;
-    const profilePatch: { color?: string; avatar?: string | null } = {};
-    if (patch.harborColor !== undefined) profilePatch.color = patch.harborColor;
-    if (patch.harborAvatar !== undefined) profilePatch.avatar = patch.harborAvatar;
-    if (Object.keys(profilePatch).length > 0) updateProfile(activeProfile.id, profilePatch);
+    if (activeProfile) {
+      const profilePatch: { color?: string; avatar?: string | null } = {};
+      if (patch.harborColor !== undefined) profilePatch.color = patch.harborColor;
+      if (patch.harborAvatar !== undefined) profilePatch.avatar = patch.harborAvatar;
+      if (Object.keys(profilePatch).length > 0) updateProfile(activeProfile.id, profilePatch);
+    }
+    if (ciraAvatarKey !== undefined) {
+      syncCiraIdentity({ avatarKey: ciraAvatarKey });
+    }
   };
   const pushDisplayName = (next: string) => {
     setDisplayName(next);
     if (activeProfile && next && next !== activeProfile.name) {
       updateProfile(activeProfile.id, { name: next });
+    }
+    syncCiraIdentity({ displayName: next });
+  };
+
+  const normalizedHandle = handleDraft.trim().toLowerCase().replace(/^@/, "");
+  const handleValid = HANDLE_RX.test(normalizedHandle);
+  const saveHandle = async () => {
+    if (!cira.me || !handleValid || handleBusy) return;
+    if (normalizedHandle === cira.me.handle) {
+      setEditingHandle(false);
+      return;
+    }
+    setHandleBusy(true);
+    setHandleNotice(null);
+    try {
+      await cira.saveProfile({
+        handle: normalizedHandle,
+        displayName: (displayName || cira.me.displayName).trim().slice(0, 48),
+        avatarKey: cira.me.avatarKey,
+      });
+      setEditingHandle(false);
+      setHandleNotice({ text: t("Saved"), tone: "ok" });
+    } catch (err) {
+      const code = err instanceof CiraError ? err.code : "UNKNOWN";
+      const msg =
+        code === "HANDLE_UNAVAILABLE"
+          ? t("That handle is already taken.")
+          : code === "RATE_LIMITED"
+            ? t("Too many attempts. Wait a moment and try again.")
+            : code === "INVALID_PROFILE"
+              ? t("That handle or display name isn't valid.")
+              : t("Something went wrong. Try again.");
+      setHandleNotice({ text: msg, tone: "error" });
+    } finally {
+      setHandleBusy(false);
     }
   };
   const [showVayraAuth, setShowVayraAuth] = useState(false);
@@ -77,7 +147,7 @@ export function AccountStub() {
     if (!file) return;
     try {
       const dataUrl = await resizeAvatar(file, 320);
-      pushIdentity({ harborAvatar: dataUrl });
+      pushIdentity({ harborAvatar: dataUrl }, null);
     } catch (err) {
       console.warn("[avatar] resize failed", err);
     }
@@ -153,7 +223,7 @@ export function AccountStub() {
           <AvatarCatalogModal
             current={effectiveAvatar}
             onPick={(id) => {
-              pushIdentity({ harborAvatar: avatarUrl(id) });
+              pushIdentity({ harborAvatar: avatarUrl(id) }, id);
               setAvatarPickerOpen(false);
             }}
             onClose={() => setAvatarPickerOpen(false)}
@@ -211,6 +281,64 @@ export function AccountStub() {
           <p className="-mt-2 max-w-full truncate type-footnote text-ink-muted">
             {vayraAccountLoading ? t("Checking account…") : vayraUser?.email ?? t("Local profile")}
           </p>
+          {vayraUser && cira.me && (
+            editingHandle ? (
+              <div className="flex w-full flex-col gap-1.5">
+                <div className="flex w-full items-center gap-2">
+                  <input
+                    value={handleDraft}
+                    onChange={(e) => {
+                      setHandleDraft(e.target.value);
+                      setHandleNotice(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void saveHandle();
+                      if (e.key === "Escape") {
+                        setHandleDraft(cira.me?.handle ?? "");
+                        setEditingHandle(false);
+                      }
+                    }}
+                    placeholder={t("e.g. marie_04")}
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-edge bg-canvas px-3 font-mono text-[13.5px] text-ink outline-none focus:border-ink"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void saveHandle()}
+                    disabled={!handleValid || handleBusy}
+                    className="h-11 shrink-0 rounded-xl bg-ink px-4 type-callout font-semibold text-canvas disabled:opacity-45"
+                  >
+                    {handleBusy ? t("Saving…") : t("Save")}
+                  </button>
+                </div>
+                {handleDraft.length > 0 && !handleValid && (
+                  <span className="text-[11.5px] text-ink-subtle">
+                    {t("3-24 characters: lowercase letters, digits, underscore.")}
+                  </span>
+                )}
+                {handleNotice && (
+                  <span className={`text-[12px] ${handleNotice.tone === "error" ? "text-danger" : "text-accent"}`}>
+                    {handleNotice.text}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setHandleDraft(cira.me?.handle ?? "");
+                  setHandleNotice(null);
+                  setEditingHandle(true);
+                }}
+                aria-label={t("Change handle")}
+                className="flex items-center gap-1.5 rounded-full bg-raised px-3 py-1 font-mono text-[12.5px] text-ink-muted"
+              >
+                <span>@{cira.me.handle}</span>
+                <Pencil size={12} className="text-ink-subtle" />
+              </button>
+            )
+          )}
           <div className="grid w-full grid-cols-2 gap-2">
             <button type="button" onClick={() => setAvatarPickerOpen(true)} className="h-11 rounded-full bg-raised px-3 type-footnote font-medium text-ink">
               {t("Choose avatar")}
@@ -246,13 +374,6 @@ export function AccountStub() {
             )}
           </div>
         </div>
-
-        <section className="flex flex-col gap-3">
-          <h3 className="type-title-3 font-semibold text-ink">{t("Profiles")}</h3>
-          <ProfilesStrip />
-          <StartupDefaults />
-          <SettingsScopeCard />
-        </section>
 
         <section className="flex flex-col gap-3">
           <h3 className="type-title-3 font-semibold text-ink">Stremio</h3>
@@ -297,112 +418,203 @@ export function AccountStub() {
     );
   }
 
-  // Three sections, each named once: the people on this VAYRA and how the
-  // active one looks, the VAYRA account, and Stremio.
+  // Three sections, each named once: the single unified Account Profile,
+  // the VAYRA account connection, and optional Stremio sync.
   return (
     <div className="flex flex-col gap-5">
       <Section
-        title={t("Profiles")}
-        subtitle={t("Everyone who uses this VAYRA gets their own watch history, avatar, color, and optional PIN. Switch anytime.")}
+        title={t("Profile")}
+        subtitle={t("One identity across VAYRA, CIRA, VARA, and LUMA.")}
       >
         <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <ProfilesStrip />
-          <div className="border-t border-edge-soft/60 pt-5">
-            <div className="flex items-center gap-5">
-              <AvatarRing
-                src={effectiveAvatar}
-                size={88}
-                onClick={() => fileRef.current?.click()}
-              />
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={onPickFile}
-                className="hidden"
-              />
-              <div className="flex min-w-0 flex-1 flex-col gap-3">
-                {editingName ? (
-                  <div className="flex items-center gap-2">
-                    <NameDraftInput
-                      value={nameDraft}
-                      onChange={setNameDraft}
-                      onSave={() => {
-                        pushDisplayName(nameDraft.trim() || displayName);
-                        setEditingName(false);
-                      }}
-                      onCancel={() => {
-                        setNameDraft(displayName);
-                        setEditingName(false);
-                      }}
-                      className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
-                    />
-                    <button
-                      onClick={() => {
-                        pushDisplayName(nameDraft.trim() || displayName);
-                        setEditingName(false);
-                      }}
-                      className="h-10 rounded-xl bg-ink px-4 text-[12.5px] font-semibold text-canvas"
-                    >
-                      {t("Save")}
-                    </button>
-                  </div>
-                ) : (
+          <div className="flex items-center gap-5">
+            <AvatarRing
+              src={effectiveAvatar}
+              size={88}
+              onClick={() => fileRef.current?.click()}
+            />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={onPickFile}
+              className="hidden"
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <NameDraftInput
+                    value={nameDraft}
+                    onChange={setNameDraft}
+                    onSave={() => {
+                      pushDisplayName(nameDraft.trim() || displayName);
+                      setEditingName(false);
+                    }}
+                    onCancel={() => {
+                      setNameDraft(displayName);
+                      setEditingName(false);
+                    }}
+                    className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
+                  />
                   <button
-                    onClick={() => setEditingName(true)}
-                    className="flex flex-wrap items-baseline gap-x-2 gap-y-0 self-start rounded-lg px-1 py-0.5 text-start transition-colors hover:bg-canvas/50"
+                    type="button"
+                    onClick={() => {
+                      pushDisplayName(nameDraft.trim() || displayName);
+                      setEditingName(false);
+                    }}
+                    className="h-10 rounded-xl bg-ink px-4 text-[12.5px] font-semibold text-canvas"
                   >
-                    <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
-                      {displayName}
+                    {t("Save")}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingName(true)}
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0 self-start rounded-lg px-1 py-0.5 text-start transition-colors hover:bg-canvas/50"
+                >
+                  <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
+                    {displayName}
+                  </span>
+                  {vayraUser?.email && !cira.me && (
+                    <span className="text-[13px] text-ink-subtle">
+                      ({vayraUser.email.split("@")[0]})
                     </span>
-                    {vayraUser?.email && (
-                      <span className="text-[13px] text-ink-subtle">
-                        ({vayraUser.email.split("@")[0]})
+                  )}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
+                    <path
+                      d="M16.5 4.5l3 3-11 11H5.5v-3l11-11z"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
+
+              {vayraUser && (cira.me || cira.autoProvisioning || cira.autoProvisionError) && (
+                <div className="flex flex-col gap-1.5">
+                  {cira.autoProvisioning ? (
+                    <span className="text-[12.5px] text-ink-subtle">{t("Setting up handle…")}</span>
+                  ) : cira.me ? (
+                    editingHandle ? (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex max-w-sm items-center gap-2">
+                          <input
+                            value={handleDraft}
+                            onChange={(e) => {
+                              setHandleDraft(e.target.value);
+                              setHandleNotice(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") void saveHandle();
+                              if (e.key === "Escape") {
+                                setHandleDraft(cira.me?.handle ?? "");
+                                setEditingHandle(false);
+                              }
+                            }}
+                            placeholder={t("e.g. marie_04")}
+                            spellCheck={false}
+                            autoComplete="off"
+                            className="h-9 min-w-0 flex-1 rounded-lg border border-edge bg-elevated px-3 font-mono text-[13px] text-ink outline-none focus:border-ink"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void saveHandle()}
+                            disabled={!handleValid || handleBusy}
+                            className="h-9 shrink-0 rounded-lg bg-ink px-3.5 text-[12px] font-semibold text-canvas disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            {handleBusy ? t("Saving…") : t("Save")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHandleDraft(cira.me?.handle ?? "");
+                              setHandleNotice(null);
+                              setEditingHandle(false);
+                            }}
+                            className="h-9 shrink-0 rounded-lg border border-edge-soft px-3 text-[12px] font-medium text-ink-muted hover:text-ink"
+                          >
+                            {t("Cancel")}
+                          </button>
+                        </div>
+                        {handleDraft.length > 0 && !handleValid && (
+                          <span className="text-[11.5px] text-ink-subtle">
+                            {t("3-24 characters: lowercase letters, digits, underscore.")}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHandleDraft(cira.me?.handle ?? "");
+                            setHandleNotice(null);
+                            setEditingHandle(true);
+                          }}
+                          aria-label={t("Change handle")}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-edge-soft bg-elevated/60 px-2.5 py-1 font-mono text-[12.5px] text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                        >
+                          <span>@{cira.me.handle}</span>
+                          <Pencil size={11} className="text-ink-subtle" />
+                        </button>
+                        {handleNotice && (
+                          <span className={`text-[12px] ${handleNotice.tone === "error" ? "text-danger" : "text-accent"}`}>
+                            {handleNotice.text}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  ) : cira.autoProvisionError ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] text-ink-subtle">
+                        {t("Your CIRA profile could not be prepared automatically.")}
                       </span>
-                    )}
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
-                      <path
-                        d="M16.5 4.5l3 3-11 11H5.5v-3l11-11z"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                      <button
+                        type="button"
+                        onClick={() => void cira.retryProvision()}
+                        className="text-[12px] font-medium text-ink underline-offset-2 hover:underline"
+                      >
+                        {t("Retry setup")}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                  {t("Upload photo")}
+                </button>
+                {customAvatar && (
+                  <button
+                    type="button"
+                    onClick={() => pushIdentity({ harborAvatar: null }, null)}
+                    className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
+                  >
+                    {t("Reset to default")}
                   </button>
                 )}
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="flex h-9 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                    {t("Upload photo")}
-                  </button>
-                  {customAvatar && (
-                    <button
-                      onClick={() => pushIdentity({ harborAvatar: null })}
-                      className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
-                    >
-                      {t("Reset to default")}
-                    </button>
-                  )}
-                </div>
-                <AvatarFan
-                  onClick={() => setAvatarPickerOpen(true)}
-                  onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) })}
-                />
-                <ColorPicker
-                  value={settings.harborColor}
-                  onChange={(c) => pushIdentity({ harborColor: c })}
-                />
               </div>
+              <AvatarFan
+                onClick={() => setAvatarPickerOpen(true)}
+                onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) }, id)}
+              />
+              <ColorPicker
+                value={settings.harborColor}
+                onChange={(c) => pushIdentity({ harborColor: c })}
+              />
             </div>
           </div>
-          <StartupDefaults />
-          <SettingsScopeCard />
         </div>
       </Section>
 

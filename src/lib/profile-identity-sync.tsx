@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useProfiles } from "./profiles";
+import { useCira } from "./cira/provider";
+import { isPlaceholderName, useProfiles } from "./profiles";
 import { useSettings, type ContentFilters } from "./settings";
 import { useTogether } from "./together/provider";
 
@@ -13,9 +14,20 @@ function sameHideContent(a: ContentFilters, b: ContentFilters): boolean {
 }
 
 export function ProfileIdentitySync() {
-  const { activeProfile } = useProfiles();
+  const { activeProfile, updateProfile } = useProfiles();
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
+  const { me } = useCira();
+
+  // Keep the local primary profile id intact (so LUMA storage keys stay stable),
+  // and hydrate its name from the unified CIRA account profile when still placeholder.
+  useEffect(() => {
+    if (!activeProfile || activeProfile.kid || !activeProfile.isPrimary) return;
+    if (!me?.displayName) return;
+    if (isPlaceholderName(activeProfile.name) && activeProfile.name !== me.displayName) {
+      updateProfile(activeProfile.id, { name: me.displayName });
+    }
+  }, [activeProfile, me?.displayName, updateProfile]);
 
   useEffect(() => {
     if (!activeProfile || activeProfile.kid) return;

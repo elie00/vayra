@@ -7,8 +7,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { useProfiles } from "@/lib/profiles";
 import { useVayraAccount, getVayraSupabaseClient } from "@/lib/vayra-account";
 import { useVara } from "@/lib/vara/provider";
+import { provisionCiraProfile } from "./auto-profile";
 import {
   CIRA_PRESENCE_EXPIRY_REFRESH_MS,
   hasExpiringCiraPresence,
@@ -39,8 +41,20 @@ export type CiraStatus = "loading" | "unavailable" | "signedOut" | "restricted" 
 type CiraValue = {
   status: CiraStatus;
   repo: CiraRepository | null;
-  /** Profil CIRA du compte connecté ; null tant qu'aucun handle n'est choisi. */
+  /** Profil CIRA du compte connecté ; auto-créé dès la connexion si absent. */
   me: CiraProfile | null;
+  /** True while automatic first-time CIRA profile provisioning is in flight. */
+  autoProvisioning: boolean;
+  /** Non-null only if automatic provisioning failed (enables a graceful retry CTA). */
+  autoProvisionError: CiraError | null;
+  /** Retries automatic provisioning after a failure. */
+  retryProvision: () => Promise<void>;
+  /** Saves the unified CIRA profile (handle, displayName, avatarKey) and syncs context state. */
+  saveProfile: (input: {
+    handle: string;
+    displayName: string;
+    avatarKey: string | null;
+  }) => Promise<CiraProfile>;
   relationships: CiraRelationship[];
   relationshipsHasMore: boolean;
   loadMoreRelationships: () => Promise<void>;
@@ -69,12 +83,15 @@ export function useCira(): CiraValue {
 
 export function CiraProvider({ children }: { children: React.ReactNode }) {
   const { user } = useVayraAccount();
-  const { activeRoom } = useVara();
+  const { activeProfile } = useProfiles();
+  const { activeRoom, refresh: refreshVara } = useVara();
   const inVara = activeRoom !== null;
 
   const [repo, setRepo] = useState<CiraRepository | null>(null);
   const [status, setStatus] = useState<CiraStatus>("loading");
   const [me, setMe] = useState<CiraProfile | null>(null);
+  const [autoProvisioning, setAutoProvisioning] = useState(false);
+  const [autoProvisionError, setAutoProvisionError] = useState<CiraError | null>(null);
   const [relationships, setRelationships] = useState<CiraRelationship[]>([]);
   const [relationshipsHasMore, setRelationshipsHasMore] = useState(false);
   const [blocks, setBlocks] = useState<CiraProfile[]>([]);
@@ -85,6 +102,13 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const [pendingInvite, setPendingInvite] = useState<PendingCiraInvite | null>(null);
   const [pendingGroupInvite, setPendingGroupInvite] = useState<PendingCiraInvite | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const autoProvisionedUserRef = useRef<string | null>(null);
+  const activeProfileRef = useRef(activeProfile);
+  activeProfileRef.current = activeProfile;
+  const userEmailRef = useRef<string | null>(user?.email ?? null);
+  userEmailRef.current = user?.email ?? null;
+  const refreshVaraRef = useRef(refreshVara);
+  refreshVaraRef.current = refreshVara;
   const userId = user?.id ?? null;
   const betaAccess = user?.app_metadata?.cira_beta === true;
 
@@ -92,12 +116,15 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
     setPendingInvite((current) => reconcilePendingCiraInvite(current, userId));
     setPendingGroupInvite((current) => reconcilePendingCiraInvite(current, userId));
     sessionIdRef.current = crypto.randomUUID();
+    autoProvisionedUserRef.current = null;
   }, [userId]);
 
   useEffect(() => {
     let cancelled = false;
     setRepo(null);
     setMe(null);
+    setAutoProvisioning(false);
+    setAutoProvisionError(null);
     setRelationships([]);
     setRelationshipsHasMore(false);
     setBlocks([]);
@@ -129,12 +156,42 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
 
   const repoRef = useRef(repo);
   repoRef.current = repo;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
   const refresh = useCallback(async () => {
     if (!repo) return;
     const load = async () => {
-      const profile = await repo.getMe();
+      let profile = await repo.getMe();
+      let newlyProvisioned = false;
+      const uid = userIdRef.current;
+      if (!profile && uid && autoProvisionedUserRef.current !== uid) {
+        autoProvisionedUserRef.current = uid;
+        if (repoRef.current === repo) {
+          setAutoProvisioning(true);
+          setAutoProvisionError(null);
+        }
+        try {
+          profile = await provisionCiraProfile(repo, {
+            localProfileName: activeProfileRef.current?.name,
+            email: userEmailRef.current,
+            userId: uid,
+            avatar: activeProfileRef.current?.avatar,
+          });
+          newlyProvisioned = true;
+        } catch (err) {
+          if (repoRef.current === repo) {
+            const ciraErr = err instanceof CiraError ? err : new CiraError("UNKNOWN");
+            setAutoProvisionError(ciraErr);
+            console.warn("[cira] auto-provision failed", err);
+          }
+        } finally {
+          if (repoRef.current === repo) setAutoProvisioning(false);
+        }
+      }
+      if (repoRef.current !== repo) return;
       setMe(profile);
       if (profile) {
+        setAutoProvisionError(null);
         const [rels, blocked, invites, nextGroups, nextGroupInvitations, nextInbox] = await Promise.all([
           repo.listRelationshipsPage(),
           repo.listBlocks(),
@@ -143,6 +200,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
           repo.listGroupInvitations(),
           repo.getInbox(),
         ]);
+        if (repoRef.current !== repo) return;
         setRelationships(rels.items);
         setRelationshipsHasMore(rels.hasMore);
         setBlocks(blocked);
@@ -150,6 +208,9 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
         setGroups(nextGroups);
         setGroupInvitations(nextGroupInvitations);
         setInbox(nextInbox);
+        if (newlyProvisioned) {
+          void refreshVaraRef.current();
+        }
       } else {
         setRelationships([]);
         setRelationshipsHasMore(false);
@@ -283,11 +344,39 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
   const clearPendingGroupInvite = useCallback(() => setPendingGroupInvite(null), []);
   const pendingGroupInviteCode = pendingGroupInvite?.code ?? null;
 
+  const retryProvision = useCallback(async () => {
+    autoProvisionedUserRef.current = null;
+    setAutoProvisionError(null);
+    await refresh();
+  }, [refresh]);
+
+  const saveProfile = useCallback(
+    async (input: { handle: string; displayName: string; avatarKey: string | null }) => {
+      if (!repo) throw new CiraError("NOT_AUTHENTICATED");
+      const hadProfile = me !== null;
+      const saved = await repo.saveProfile(input);
+      if (repoRef.current === repo) {
+        setMe(saved);
+        setAutoProvisionError(null);
+        if (!hadProfile) {
+          await refresh();
+          void refreshVaraRef.current();
+        }
+      }
+      return saved;
+    },
+    [repo, me, refresh],
+  );
+
   const value = useMemo<CiraValue>(
     () => ({
       status,
       repo,
       me,
+      autoProvisioning,
+      autoProvisionError,
+      retryProvision,
+      saveProfile,
       relationships,
       relationshipsHasMore,
       loadMoreRelationships,
@@ -304,7 +393,7 @@ export function CiraProvider({ children }: { children: React.ReactNode }) {
       presentGroupInvite,
       clearPendingGroupInvite,
     }),
-    [status, repo, me, relationships, relationshipsHasMore, loadMoreRelationships, blocks, invitations, groups, groupInvitations, inbox, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
+    [status, repo, me, autoProvisioning, autoProvisionError, retryProvision, saveProfile, relationships, relationshipsHasMore, loadMoreRelationships, blocks, invitations, groups, groupInvitations, inbox, refresh, pendingInviteCode, presentInvite, clearPendingInvite, pendingGroupInviteCode, presentGroupInvite, clearPendingGroupInvite],
   );
 
   return <CiraContext.Provider value={value}>{children}</CiraContext.Provider>;

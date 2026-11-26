@@ -108,7 +108,8 @@ export function StremioRail() {
 function RailAvatar() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const { activeProfile, openPicker } = useProfiles();
+  const { activeProfile } = useProfiles();
+  const { openSettings } = useView();
   const t = useT();
   const src = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
   const ring = activeProfile?.color
@@ -119,7 +120,7 @@ function RailAvatar() {
   return (
     <button
       type="button"
-      onClick={() => openPicker({ kind: "list" })}
+      onClick={() => openSettings("account")}
       aria-label={label}
       title={label}
       className="group flex h-16 w-full flex-col items-center justify-center gap-1 rounded-xl text-white/55 transition-colors hover:bg-white/[0.05] hover:text-white/85"

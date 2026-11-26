@@ -7,7 +7,7 @@ export function PrivateBetaGuideCard() {
   const t = useT();
   const { completedCount, progress, openGuide, resetGuide } = usePrivateBetaLaunch();
   const items = [
-    [t("Create your private profile"), progress.profile],
+    [t("Check your VAYRA identity"), progress.profile],
     [t("Connect with one trusted person"), progress.relationship],
     [t("Create or join a private group"), progress.group],
     [t("Understand how Watch Rooms protect sources"), progress.roomBriefing],

@@ -1,4 +1,4 @@
-import { ChevronsUpDown, Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
+import { ChevronsUpDown, LogIn, LogOut, Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AuthModal } from "@/components/auth-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n";
 import { useProfiles, type Profile } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useVayraAccount } from "@/lib/vayra-account";
+import { useView } from "@/lib/view";
 
 export function ProfileChip({
   collapsed = false,
@@ -13,7 +14,8 @@ export function ProfileChip({
 }: { collapsed?: boolean; menuPlacement?: "above" | "below" } = {}) {
   const { user, signOut } = useVayraAccount();
   const { settings } = useSettings();
-  const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
+  const { activeProfile } = useProfiles();
+  const { openSettings } = useView();
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -39,7 +41,6 @@ export function ProfileChip({
     };
   }, [menuOpen]);
 
-  const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
   const displayName = activeProfile?.name ?? user?.email?.split("@")[0] ?? t("profile.fallback");
 
   return (
@@ -92,92 +93,19 @@ export function ProfileChip({
             menuPlacement === "below" ? "top-full mt-2" : "bottom-full mb-2"
           } ${collapsed ? "start-0 w-64" : "inset-x-0 min-w-56"}`}
         >
-          {otherProfiles.length > 0 && (
-            <div className="flex flex-col gap-0.5 border-b border-edge-soft/75 p-1.5">
-              <span className="px-2.5 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-                {t("profile.switch")}
-              </span>
-              {otherProfiles.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    if (p.passwordHash) {
-                      openPicker({ kind: "unlock", profileId: p.id });
-                    } else {
-                      selectProfile(p.id);
-                    }
-                  }}
-                  className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-start transition-colors hover:bg-raised"
-                >
-                  <span className="relative inline-flex shrink-0">
-                    <span className="rounded-full ring-1 ring-white/15">
-                      <ProfileAvatar profile={p} fallbackAvatar={null} compact />
-                    </span>
-                    {p.passwordHash && (
-                      <span className="absolute -bottom-0.5 -end-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink shadow-sm ring-1 ring-edge">
-                        <Lock size={8} strokeWidth={2.6} />
-                      </span>
-                    )}
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[13.5px] font-medium text-ink">{p.name}</span>
-                    {p.isPrimary && (
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-[0.18em]"
-                        style={{ color: p.color }}
-                      >
-                        {t("profile.primary")}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
           <div className="flex flex-col p-1">
             <button
               type="button"
               role="menuitem"
               onClick={() => {
-                openPicker({ kind: "list" });
+                openSettings("account");
                 setMenuOpen(false);
               }}
               className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
             >
-              <Users size={14} strokeWidth={2} />
-              {t("profile.whoWatching")}
+              <Pencil size={14} strokeWidth={2} />
+              {t("Edit profile")}
             </button>
-            {activeProfile && (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  openPicker({ kind: "edit", profileId: activeProfile.id });
-                  setMenuOpen(false);
-                }}
-                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-              >
-                <Pencil size={14} strokeWidth={2} />
-                {t("profile.editThis")}
-              </button>
-            )}
-            {activeProfile?.isPrimary && (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  openPicker({ kind: "create" });
-                  setMenuOpen(false);
-                }}
-                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-              >
-                <Plus size={14} strokeWidth={2} />
-                {t("profile.new")}
-              </button>
-            )}
             <div className="my-1 h-px bg-edge-soft/60" aria-hidden="true" />
             {user ? (
               <button

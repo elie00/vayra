@@ -49,6 +49,10 @@ export function PrivateBetaLaunchModal() {
 
   if (!eligible || !open) return null;
 
+  const openAccount = () => {
+    closeGuide();
+    openSettings("account");
+  };
   const openCira = () => {
     closeGuide();
     openSettings("cira");
@@ -67,7 +71,7 @@ export function PrivateBetaLaunchModal() {
     profile: {
       eyebrow: t("Step 1 · Your identity"),
       title: t("Choose how your circle recognizes you"),
-      body: t("Create a minimal CIRA profile and a unique handle. Only accepted relations and private groups can see it."),
+      body: t("Your VAYRA identity and handle are ready automatically. You can customize them anytime in Account settings."),
     },
     relationship: {
       eyebrow: t("Step 2 · One trusted person"),
@@ -142,7 +146,7 @@ export function PrivateBetaLaunchModal() {
           ) : (
             <div className="mt-8 grid gap-2" aria-label={t("Private beta setup progress")}>
               {[
-                [t("CIRA profile"), progress.profile],
+                [t("VAYRA identity"), progress.profile],
                 [t("Accepted relation"), progress.relationship],
                 [t("Active private group"), progress.group],
                 [t("Privacy briefing"), progress.roomBriefing],
@@ -171,6 +175,10 @@ export function PrivateBetaLaunchModal() {
             {step === "welcome" ? (
               <button type="button" onClick={next} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-5 text-[13px] font-semibold text-canvas">
                 {t("Start private setup")} <ArrowRight className="h-4 w-4 dir-icon" aria-hidden />
+              </button>
+            ) : step === "profile" ? (
+              <button type="button" onClick={openAccount} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-5 text-[13px] font-semibold text-canvas">
+                {t("Edit in Account")} <ArrowRight className="h-4 w-4 dir-icon" aria-hidden />
               </button>
             ) : step === "room" ? (
               <button type="button" onClick={() => { markRoomBriefingSeen(); openCira(); }} className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-5 text-[13px] font-semibold text-canvas">

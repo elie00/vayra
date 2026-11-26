@@ -107,7 +107,6 @@ const SearchOverlay = lazy(() => import("@/components/search/search-overlay").th
 const CommandPalette = lazy(() => import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })));
 const WatchLocalModal = lazy(() => import("@/components/player/watch-local-modal").then((m) => ({ default: m.WatchLocalModal })));
 const LocalEpisodesModal = lazy(() => import("@/components/player/local-episodes-modal").then((m) => ({ default: m.LocalEpisodesModal })));
-const ProfilePickerModal = lazy(() => import("@/components/profile-picker/picker-modal").then((m) => ({ default: m.ProfilePickerModal })));
 const TopRankModal = lazy(() => import("@/components/top-rank-modal").then((m) => ({ default: m.TopRankModal })));
 const TogetherLeaveForLiveModal = lazy(() => import("@/components/together-leave-for-live-modal").then((m) => ({ default: m.TogetherLeaveForLiveModal })));
 const PrivateBetaLaunchModal = lazy(() => import("@/components/private-beta-launch-modal").then((m) => ({ default: m.PrivateBetaLaunchModal })));
@@ -343,7 +342,6 @@ export function App() {
                       <CustomHoverCssMount />
                       <Suspense fallback={null}>
                         <TopRankModal />
-                        <ProfilePickerModal />
                       </Suspense>
                       <CurfewGuard />
                       <Suspense fallback={null}>

@@ -73,6 +73,17 @@ const frExtended: Record<string, string> = {
   "Manage addons": "Gérer les extensions",
   "Languages: {list}": "Langues : {list}",
   "No streams match these filters.": "Aucun flux ne correspond à ces filtres.",
+  "Profile": "Profil",
+  "One identity across VAYRA, CIRA, VARA, and LUMA.": "Une seule identité pour VAYRA, CIRA, VARA et LUMA.",
+  "Setting up your VAYRA identity…": "Préparation de votre identité VAYRA…",
+  "Edit in Account": "Modifier dans Compte",
+  "Your CIRA profile could not be prepared automatically.": "Votre profil CIRA n’a pas pu être préparé automatiquement.",
+  "Change handle": "Modifier l’identifiant",
+  "Setting up handle…": "Création de l’identifiant…",
+  "Retry setup": "Réessayer",
+  "Your VAYRA identity and handle are ready automatically. You can customize them anytime in Account settings.": "Votre identité VAYRA et votre identifiant sont prêts automatiquement. Vous pouvez les modifier à tout moment dans Compte.",
+  "VAYRA identity": "Identité VAYRA",
+  "Check your VAYRA identity": "Vérifier votre identité VAYRA",
 };
 
 export default frExtended;

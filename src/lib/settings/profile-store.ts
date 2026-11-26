@@ -61,12 +61,12 @@ function readActiveSourceForRecovery(): { profileId: string; linked: boolean } {
     const raw = localStorage.getItem("harbor.profiles.v1");
     if (!raw) return { profileId: "default", linked: true };
     const s = JSON.parse(raw) as {
-      profiles?: Array<{ id: string; settingsLinked?: boolean }>;
+      profiles?: Array<{ id: string; isPrimary?: boolean }>;
       activeId?: string | null;
     };
-    const id = s.activeId || "default";
-    const p = s.profiles?.find((x) => x.id === id);
-    return { profileId: id, linked: p?.settingsLinked !== false };
+    const primary = s.profiles?.find((x) => x.isPrimary) ?? s.profiles?.[0];
+    const id = primary?.id || s.activeId || "default";
+    return { profileId: id, linked: true };
   } catch {
     return { profileId: "default", linked: true };
   }
